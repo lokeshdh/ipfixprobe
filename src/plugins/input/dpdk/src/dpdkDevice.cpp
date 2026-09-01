@@ -46,7 +46,7 @@ DpdkDevice::DpdkDevice(
 	uint64_t rssOffload)
 	: m_portID(portID)
 	, m_rxQueueCount(rxQueueCount)
-	, m_txQueueCount(0)
+	, m_txQueueCount(1)
 	, m_mBufsCount(mbufsCount)
 	, m_isNfbDpdkDriver(false)
 	, m_supportedRSS(false)
