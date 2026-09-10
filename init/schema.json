@@ -113,11 +113,11 @@
             "ndp": {
               "type": "object",
               "properties": {
-		"device": {
+                "device": {
                   "type": "array",
                   "items": {
                     "type": "string"
-                   }
+                  }
                 },
                 "queues": {
                   "type": "string"
@@ -200,6 +200,12 @@
                 "mtu": {
                   "type": [
                     "string",
+                    "null"
+                  ]
+                },
+                "rss_offload": {
+                  "type": [
+                    "integer",
                     "null"
                   ]
                 }

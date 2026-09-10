@@ -140,12 +140,12 @@ namespace ipxp {
 #define HTTP_SERVER(F) F(8057, 201, -1, nullptr)
 #define HTTP_SET_COOKIE_NAMES(F) F(8057, 202, -1, nullptr)
 
-#define RTSP_METHOD(F) F(16982, 600, -1, nullptr)
-#define RTSP_USERAGENT(F) F(16982, 601, -1, nullptr)
-#define RTSP_URI(F) F(16982, 602, -1, nullptr)
-#define RTSP_STATUS(F) F(16982, 603, 2, nullptr)
-#define RTSP_CONTENT_TYPE(F) F(16982, 604, -1, nullptr)
-#define RTSP_SERVER(F) F(16982, 605, -1, nullptr)
+#define RTSP_METHOD(F) F(8057, 1040, -1, nullptr)
+#define RTSP_USERAGENT(F) F(8057, 1041, -1, nullptr)
+#define RTSP_URI(F) F(8057, 1042, -1, nullptr)
+#define RTSP_STATUS(F) F(8057, 1043, 2, nullptr)
+#define RTSP_CONTENT_TYPE(F) F(8057, 1044, -1, nullptr)
+#define RTSP_SERVER(F) F(8057, 1045, -1, nullptr)
 
 #define DNS_RCODE(F) F(8057, 1, 1, nullptr)
 #define DNS_NAME(F) F(8057, 2, -1, nullptr)
@@ -196,7 +196,7 @@ namespace ipxp {
 #define TLS_VERSION(F) F(39499, 333, 2, nullptr)
 #define TLS_ALPN(F) F(39499, 337, -1, nullptr)
 #define TLS_JA3(F) F(39499, 357, -1, nullptr)
-#define TLS_JA4(F) F(39499, 358, -1, nullptr)
+#define TLS_JA4(F) F(8057, 809, -1, nullptr)
 #define TLS_EXT_TYPE(F) F(0, 291, -1, nullptr)
 #define TLS_EXT_LEN(F) F(0, 291, -1, nullptr)
 

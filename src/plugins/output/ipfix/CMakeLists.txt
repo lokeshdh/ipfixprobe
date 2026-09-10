@@ -13,6 +13,7 @@ set_target_properties(ipfixprobe-output-ipfix PROPERTIES
 
 target_include_directories(ipfixprobe-output-ipfix PRIVATE
 	${CMAKE_SOURCE_DIR}/include/
+	${telemetry_SOURCE_DIR}/include
 )
 
 if (ENABLE_OUTPUT_LZ4)

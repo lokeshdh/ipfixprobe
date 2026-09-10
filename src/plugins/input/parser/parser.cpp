@@ -79,30 +79,31 @@ inline uint16_t parse_eth_hdr(const u_char* data_ptr, uint16_t data_len, Packet*
 	DEBUG_MSG("\tDest mac:\t%s\n", ether_ntoa((struct ether_addr*) eth->h_dest));
 	DEBUG_MSG("\tSrc mac:\t%s\n", ether_ntoa((struct ether_addr*) eth->h_source));
 #else
-	DEBUG_CODE(char src_mac[18]; // ether_ntoa missing on some platforms
-			   char dst_mac[18];
-			   uint8_t* p = (uint8_t*) eth->h_source;
-			   snprintf(
-				   src_mac,
-				   sizeof(src_mac),
-				   "%02x:%02x:%02x:%02x:%02x:%02x",
-				   p[0],
-				   p[1],
-				   p[2],
-				   p[3],
-				   p[4],
-				   p[5]);
-			   p = (uint8_t*) eth->h_dest;
-			   snprintf(
-				   dst_mac,
-				   sizeof(dst_mac),
-				   "%02x:%02x:%02x:%02x:%02x:%02x",
-				   p[0],
-				   p[1],
-				   p[2],
-				   p[3],
-				   p[4],
-				   p[5]););
+	DEBUG_CODE(
+		char src_mac[18]; // ether_ntoa missing on some platforms
+		char dst_mac[18];
+		uint8_t* p = (uint8_t*) eth->h_source;
+		snprintf(
+			src_mac,
+			sizeof(src_mac),
+			"%02x:%02x:%02x:%02x:%02x:%02x",
+			p[0],
+			p[1],
+			p[2],
+			p[3],
+			p[4],
+			p[5]);
+		p = (uint8_t*) eth->h_dest;
+		snprintf(
+			dst_mac,
+			sizeof(dst_mac),
+			"%02x:%02x:%02x:%02x:%02x:%02x",
+			p[0],
+			p[1],
+			p[2],
+			p[3],
+			p[4],
+			p[5]););
 	DEBUG_MSG("\tDest mac:\t%s\n", dst_mac);
 	DEBUG_MSG("\tSrc mac:\t%s\n", src_mac);
 #endif
@@ -465,7 +466,8 @@ inline uint16_t parse_ipv6_hdr(const u_char* data_ptr, uint16_t data_len, Packet
  * \param [out] pkt Pointer to Packet structure where parsed fields will be stored.
  * \return Size of header in bytes.
  */
-inline uint16_t parse_tcp_hdr(const u_char* data_ptr, uint16_t data_len, Packet* pkt)
+inline uint16_t
+parse_tcp_hdr(const u_char* data_ptr, uint16_t data_len, Packet* pkt, ParserStats& stats)
 {
 	struct tcphdr* tcp = (struct tcphdr*) data_ptr;
 	if (sizeof(struct tcphdr) > data_len) {
@@ -478,6 +480,9 @@ inline uint16_t parse_tcp_hdr(const u_char* data_ptr, uint16_t data_len, Packet*
 	pkt->tcp_ack = ntohl(tcp->ack_seq);
 	pkt->tcp_flags = (uint8_t) *(data_ptr + 13) & 0xFF;
 	pkt->tcp_window = ntohs(tcp->window);
+
+	stats.top_ports.increment_tcp_frequency(pkt->src_port);
+	stats.top_ports.increment_tcp_frequency(pkt->dst_port);
 
 	DEBUG_MSG("TCP header:\n");
 	DEBUG_MSG("\tSrc port:\t%u\n", ntohs(tcp->source));
@@ -544,7 +549,8 @@ inline uint16_t parse_tcp_hdr(const u_char* data_ptr, uint16_t data_len, Packet*
  * \param [out] pkt Pointer to Packet structure where parsed fields will be stored.
  * \return Size of header in bytes.
  */
-inline uint16_t parse_udp_hdr(const u_char* data_ptr, uint16_t data_len, Packet* pkt)
+inline uint16_t
+parse_udp_hdr(const u_char* data_ptr, uint16_t data_len, Packet* pkt, ParserStats& stats)
 {
 	struct udphdr* udp = (struct udphdr*) data_ptr;
 	if (sizeof(struct udphdr) > data_len) {
@@ -553,6 +559,9 @@ inline uint16_t parse_udp_hdr(const u_char* data_ptr, uint16_t data_len, Packet*
 
 	pkt->src_port = ntohs(udp->source);
 	pkt->dst_port = ntohs(udp->dest);
+
+	stats.top_ports.increment_udp_frequency(pkt->src_port);
+	stats.top_ports.increment_udp_frequency(pkt->dst_port);
 
 	DEBUG_MSG("UDP header:\n");
 	DEBUG_MSG("\tSrc port:\t%u\n", ntohs(udp->source));
@@ -673,28 +682,19 @@ void parse_packet(
 		return;
 	}
 	Packet* pkt = &opt->pblock->pkts[opt->pblock->cnt];
+	// reset all packet data
+	*pkt = Packet();
 	uint16_t data_offset = 0;
 
 	DEBUG_MSG("---------- packet parser  #%u -------------\n", ++s_total_pkts);
-	DEBUG_CODE(char timestamp[32]; time_t time = ts.tv_sec;
-			   strftime(timestamp, sizeof(timestamp), "%FT%T", localtime(&time)););
+	DEBUG_CODE(
+		char timestamp[32]; time_t time = ts.tv_sec;
+		strftime(timestamp, sizeof(timestamp), "%FT%T", localtime(&time)););
 	DEBUG_MSG("Time:\t\t\t%s.%06lu\n", timestamp, ts.tv_usec);
 	DEBUG_MSG("Packet length:\t\tcaplen=%uB len=%uB\n\n", caplen, len);
 
 	pkt->packet_len_wire = len;
 	pkt->ts = ts;
-	pkt->src_port = 0;
-	pkt->dst_port = 0;
-	pkt->ip_proto = 0;
-	pkt->ip_ttl = 0;
-	pkt->ip_flags = 0;
-	pkt->ip_version = 0;
-	pkt->ip_payload_len = 0;
-	pkt->tcp_flags = 0;
-	pkt->tcp_window = 0;
-	pkt->tcp_options = 0;
-	pkt->tcp_mss = 0;
-	pkt->mplsTop = 0;
 
 	stats.seen_packets++;
 
@@ -748,12 +748,14 @@ void parse_packet(
 		}
 
 		l4_hdr_offset = data_offset;
-		if (pkt->ip_proto == IPPROTO_TCP) {
-			data_offset += parse_tcp_hdr(data + data_offset, caplen - data_offset, pkt);
-			stats.tcp_packets++;
-		} else if (pkt->ip_proto == IPPROTO_UDP) {
-			data_offset += parse_udp_hdr(data + data_offset, caplen - data_offset, pkt);
-			stats.udp_packets++;
+		if (pkt->frag_off == 0) {
+			if (pkt->ip_proto == IPPROTO_TCP) {
+				data_offset += parse_tcp_hdr(data + data_offset, caplen - data_offset, pkt, stats);
+				stats.tcp_packets++;
+			} else if (pkt->ip_proto == IPPROTO_UDP) {
+				data_offset += parse_udp_hdr(data + data_offset, caplen - data_offset, pkt, stats);
+				stats.udp_packets++;
+			}
 		}
 	} catch (const char* err) {
 		DEBUG_MSG("%s\n", err);

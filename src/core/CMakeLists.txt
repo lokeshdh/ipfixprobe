@@ -11,6 +11,7 @@ add_library(ipfixprobe-core STATIC
 	workers.cpp
 	workers.hpp
 	inputPlugin.cpp
+	outputPlugin.cpp
 	pluginManager.cpp
 	pluginManager.hpp
 )
@@ -31,6 +32,7 @@ target_link_libraries(ipfixprobe-core
 	telemetry::appFs
 	atomic::atomic
 	${CMAKE_DL_LIBS}
+	top-ports
 )
 
 if (ENABLE_UNWIND)

@@ -1,4 +1,5 @@
 add_subdirectory(raw)
+add_subdirectory(parser)
 
 if (ENABLE_INPUT_SOCK)
 	add_subdirectory(sock)

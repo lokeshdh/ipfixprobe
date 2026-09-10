@@ -15,7 +15,7 @@ jobs:
         id: os
         run: |
           osArray=()
-          osArray+=("oraclelinux:9")
+          osArray+=("oraclelinux:10")
           osArray=$(jq --compact-output --null-input '$ARGS.positional' --args -- "${osArray[@]}")
           echo "Updated os list: $osArray"
           echo "os=$osArray" >> $GITHUB_OUTPUT
@@ -54,3 +54,7 @@ jobs:
     uses: ./.github/workflows/rpm-install.yml
     with:
       os: ${{ matrix.os }}
+
+  ipfix-elements-check:
+    needs: [rpm-build]
+    uses: ./.github/workflows/checkIpfixElemets.yml
